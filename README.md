@@ -1,216 +1,257 @@
-# Ralph
+# Ralph + BMAD QRD Loop
 
 ![Ralph](ralph.webp)
 
-Ralph is an autonomous AI agent loop that runs AI coding tools ([Amp](https://ampcode.com) or [Claude Code](https://docs.anthropic.com/en/docs/claude-code)) repeatedly until all PRD items are complete. Each iteration is a fresh instance with clean context. Memory persists via git history, `progress.txt`, and `prd.json`.
+An autonomous AI agent loop that combines the **BMAD method** (structured discovery and planning), **QRD** (quality requirements documents), and **Ralph** (iterative execution loop) to build software features end-to-end.
 
-Based on [Geoffrey Huntley's Ralph pattern](https://ghuntley.com/ralph/).
+Based on [Geoffrey Huntley's Ralph pattern](https://ghuntley.com/ralph/), enhanced with [BMAD method](https://github.com/tomlupo/bmad-method-quant) structured analysis and QRD quality validation.
 
-[Read my in-depth article on how I use Ralph](https://x.com/ryancarson/status/2008548371712135632)
+## What's Different
+
+This version adds three key improvements over the standard Ralph loop:
+
+1. **BMAD-style structured planning** - Discovery interview, structured PRD creation, and architecture phases before any code is written
+2. **QRD (Quality Requirements Document)** - Defines quality gates, non-functional requirements, edge cases, and validation criteria that Ralph enforces at every iteration
+3. **Build-Test-Fix cycle** - Extended loop that tests the deployment, finds bugs, converts them to stories, and fixes them automatically
 
 ## Prerequisites
 
-- One of the following AI coding tools installed and authenticated:
-  - [Amp CLI](https://ampcode.com) (default)
-  - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`)
-- `jq` installed (`brew install jq` on macOS)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`)
+- `jq` installed (`brew install jq` on macOS, `apt install jq` on Linux)
 - A git repository for your project
 
-## Setup
+Optional:
+- [Amp CLI](https://ampcode.com) (alternative to Claude Code)
 
-### Option 1: Copy to your project
+## Quick Start
 
-Copy the ralph files into your project:
+### 1. Copy to your project
 
 ```bash
 # From your project root
 mkdir -p scripts/ralph
-cp /path/to/ralph/ralph.sh scripts/ralph/
-
-# Copy the prompt template for your AI tool of choice:
-cp /path/to/ralph/prompt.md scripts/ralph/prompt.md    # For Amp
-# OR
-cp /path/to/ralph/CLAUDE.md scripts/ralph/CLAUDE.md    # For Claude Code
-
-chmod +x scripts/ralph/ralph.sh
+cp -r /path/to/ralph/* scripts/ralph/
+chmod +x scripts/ralph/ralph.sh scripts/ralph/build-test-fix-loop.sh
 ```
 
-### Option 2: Install skills globally
-
-Copy the skills to your Amp or Claude config for use across all projects:
-
-For AMP
-```bash
-cp -r skills/prd ~/.config/amp/skills/
-cp -r skills/ralph ~/.config/amp/skills/
-```
-
-For Claude Code
-```bash
-cp -r skills/prd ~/.claude/skills/
-cp -r skills/ralph ~/.claude/skills/
-```
-
-### Configure Amp auto-handoff (recommended)
-
-Add to `~/.config/amp/settings.json`:
-
-```json
-{
-  "amp.experimental.autoHandoff": { "context": 90 }
-}
-```
-
-This enables automatic handoff when context fills up, allowing Ralph to handle large stories that exceed a single context window.
-
-## Workflow
-
-### 1. Create a PRD
-
-Use the PRD skill to generate a detailed requirements document:
-
-```
-Load the prd skill and create a PRD for [your feature description]
-```
-
-Answer the clarifying questions. The skill saves output to `tasks/prd-[feature-name].md`.
-
-### 2. Convert PRD to Ralph format
-
-Use the Ralph skill to convert the markdown PRD to JSON:
-
-```
-Load the ralph skill and convert tasks/prd-[feature-name].md to prd.json
-```
-
-This creates `prd.json` with user stories structured for autonomous execution.
-
-### 3. Run Ralph
+Or install skills globally:
 
 ```bash
-# Using Amp (default)
-./scripts/ralph/ralph.sh [max_iterations]
+# For Claude Code
+cp -r skills/* ~/.claude/skills/
 
-# Using Claude Code
-./scripts/ralph/ralph.sh --tool claude [max_iterations]
+# For Amp
+cp -r skills/* ~/.config/amp/skills/
 ```
 
-Default is 10 iterations. Use `--tool amp` or `--tool claude` to select your AI coding tool.
+### 2. Run the guided workflow
 
-Ralph will:
-1. Create a feature branch (from PRD `branchName`)
-2. Pick the highest priority story where `passes: false`
-3. Implement that single story
-4. Run quality checks (typecheck, tests)
-5. Commit if checks pass
-6. Update `prd.json` to mark story as `passes: true`
-7. Append learnings to `progress.txt`
-8. Repeat until all stories pass or max iterations reached
+Start Claude Code and it will walk you through 10 phases:
+
+```bash
+claude
+```
+
+Claude reads `CLAUDE.md` and guides you through:
+- Phase 0: Setup check
+- Phase 1: Discovery interview (BMAD Analyst)
+- Phase 2: PRD creation (BMAD PM)
+- Phase 3: QRD creation (Quality Engineer)
+- Phase 4: Edge case analysis
+- Phase 5: Story quality validation
+- Phase 6: Architecture (optional)
+- Phase 7: Convert to JSON
+- Phase 8: Push to git
+- Phase 9: Start autonomous build
+- Phase 10: Monitor and iterate
+
+### 3. Or run Ralph directly
+
+If you already have a `prd.json`:
+
+```bash
+# Using Claude Code (default)
+./ralph.sh [max_iterations]
+
+# Using Amp
+./ralph.sh --tool amp [max_iterations]
+```
+
+Default is 100 iterations.
+
+### 4. Extended build-test-fix cycle
+
+```bash
+./build-test-fix-loop.sh http://localhost:3000 3
+```
+
+## How It Works
+
+### Planning Phase (Human-Guided)
+
+```
+Phase 1: Discovery Interview  -->  Understand the problem
+Phase 2: Create PRD           -->  tasks/prd-[name].md
+Phase 3: Create QRD           -->  tasks/qrd-[name].md
+Phase 4: Edge Cases           -->  Updated QRD
+Phase 5: Story Validation     -->  Validated PRD
+Phase 6: Architecture         -->  tasks/architecture-[name].md (optional)
+Phase 7: Convert to JSON      -->  prd.json (with QRD integration)
+```
+
+### Execution Phase (Autonomous)
+
+```
+ralph.sh
+  |
+  +-- Iteration 1: Read prd.json + QRD -> Pick story -> Implement -> Validate -> Commit
+  +-- Iteration 2: Read prd.json + QRD -> Pick story -> Implement -> Validate -> Commit
+  +-- ...
+  +-- Iteration N: All stories pass -> COMPLETE
+```
+
+Each iteration:
+1. Reads `prd.json` to find the next story (`passes: false`)
+2. Reads `progress.txt` for learnings from previous iterations
+3. Reads the QRD for quality requirements and edge cases
+4. Implements the story
+5. Runs quality checks (typecheck, lint, test, build)
+6. Validates against QRD quality gates
+7. Commits and marks the story as passing
+8. Appends learnings to `progress.txt`
+
+### Build-Test-Fix Cycle
+
+```
+build-test-fix-loop.sh
+  |
+  +-- Cycle 1: Build -> Test -> Find bugs -> Convert to stories
+  +-- Cycle 2: Build -> Test -> Find bugs -> Convert to stories
+  +-- Cycle 3: Build -> Test -> No bugs -> Done!
+```
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `ralph.sh` | The bash loop that spawns fresh AI instances (supports `--tool amp` or `--tool claude`) |
-| `prompt.md` | Prompt template for Amp |
-| `CLAUDE.md` | Prompt template for Claude Code |
-| `prd.json` | User stories with `passes` status (the task list) |
-| `prd.json.example` | Example PRD format for reference |
-| `progress.txt` | Append-only learnings for future iterations |
-| `skills/prd/` | Skill for generating PRDs |
-| `skills/ralph/` | Skill for converting PRDs to JSON |
-| `flowchart/` | Interactive visualization of how Ralph works |
+| `CLAUDE.md` | Main workflow instructions (10 phases for Claude Code) |
+| `prompt.md` | Agent instructions for Amp |
+| `ralph.sh` | The autonomous build loop |
+| `build-test-fix-loop.sh` | Extended build-test-fix cycle |
+| `prompts/ralph-agent.md` | Instructions piped into Claude each iteration |
+| `prd.json` | User stories with `passes` status (generated) |
+| `progress.txt` | Append-only learnings (generated) |
 
-## Flowchart
+### Skills
 
-[![Ralph Flowchart](ralph-flowchart.png)](https://snarktank.github.io/ralph/)
+| Skill | Purpose |
+|-------|---------|
+| `skills/prd/` | Generate PRDs with BMAD structured analysis |
+| `skills/qrd/` | Generate Quality Requirements Documents |
+| `skills/ralph/` | Convert PRDs + QRDs to `prd.json` |
+| `skills/edge-cases/` | Analyze PRDs for edge cases and risks |
+| `skills/story-quality/` | Validate story quality before execution |
 
-**[View Interactive Flowchart](https://snarktank.github.io/ralph/)** - Click through to see each step with animations.
+### Templates
 
-The `flowchart/` directory contains the source code. To run locally:
+| Template | Purpose |
+|----------|---------|
+| `templates/prd.json.example` | Example `prd.json` with QRD integration |
+| `templates/qrd.md.example` | Example QRD document |
 
-```bash
-cd flowchart
-npm install
-npm run dev
-```
+## The QRD (Quality Requirements Document)
+
+The QRD is the key addition in this version. It defines:
+
+- **Quality Attributes** - Non-functional requirements (correctness, performance, reliability, security)
+- **Quality Gates** - Checkpoints that must pass for every story (static analysis, testing, integration)
+- **Validation Criteria Patterns** - Reusable acceptance criteria by story type
+- **Edge Case & Risk Register** - Known edge cases with severity and mitigations
+- **Definition of Done** - Checklist applied to every story
+
+The QRD is created during Phase 3 and its quality gates are injected into `prd.json` during conversion. Ralph reads the QRD at each iteration and validates implementation against these requirements.
 
 ## Critical Concepts
 
 ### Each Iteration = Fresh Context
 
-Each iteration spawns a **new AI instance** (Amp or Claude Code) with clean context. The only memory between iterations is:
+Each iteration spawns a **new AI instance** with clean context. Memory persists only through:
 - Git history (commits from previous iterations)
-- `progress.txt` (learnings and context)
+- `progress.txt` (learnings and patterns)
 - `prd.json` (which stories are done)
+- QRD file (quality requirements)
 
 ### Small Tasks
 
-Each PRD item should be small enough to complete in one context window. If a task is too big, the LLM runs out of context before finishing and produces poor code.
+Each story must be completable in one context window. If too big, the LLM runs out of context.
 
-Right-sized stories:
-- Add a database column and migration
-- Add a UI component to an existing page
-- Update a server action with new logic
-- Add a filter dropdown to a list
+Right-sized: Add a column, add a component, update a server action, add a filter.
 
-Too big (split these):
-- "Build the entire dashboard"
-- "Add authentication"
-- "Refactor the API"
+Too big: "Build the dashboard", "Add authentication", "Refactor the API".
 
-### AGENTS.md Updates Are Critical
+### Quality Feedback Loops
 
-After each iteration, Ralph updates the relevant `AGENTS.md` files with learnings. This is key because AI coding tools automatically read these files, so future iterations (and future human developers) benefit from discovered patterns, gotchas, and conventions.
-
-Examples of what to add to AGENTS.md:
-- Patterns discovered ("this codebase uses X for Y")
-- Gotchas ("do not forget to update Z when changing W")
-- Useful context ("the settings panel is in component X")
-
-### Feedback Loops
-
-Ralph only works if there are feedback loops:
+Ralph validates at every iteration:
 - Typecheck catches type errors
 - Tests verify behavior
-- CI must stay green (broken code compounds across iterations)
+- Linter enforces style
+- QRD gates enforce quality standards
+- Edge case criteria prevent known risks
 
-### Browser Verification for UI Stories
+### Notifications
 
-Frontend stories must include "Verify in browser using dev-browser skill" in acceptance criteria. Ralph will use the dev-browser skill to navigate to the page, interact with the UI, and confirm changes work.
+Configure push notifications via [ntfy.sh](https://ntfy.sh):
+
+```bash
+echo 'NTFY_TOPIC="ralph-my-project-'$(openssl rand -hex 4)'"' > .notify-config
+```
+
+Install the ntfy app on your phone and subscribe to the topic.
 
 ### Stop Condition
 
-When all stories have `passes: true`, Ralph outputs `<promise>COMPLETE</promise>` and the loop exits.
+When all stories have `passes: true`, Ralph outputs the completion signal and the loop exits.
+
+## Flowchart
+
+[![Ralph Flowchart](ralph-flowchart.png)](https://snarktank.github.io/ralph/)
+
+The `flowchart/` directory contains an interactive visualization. To run locally:
+
+```bash
+cd flowchart && npm install && npm run dev
+```
 
 ## Debugging
-
-Check current state:
 
 ```bash
 # See which stories are done
 cat prd.json | jq '.userStories[] | {id, title, passes}'
 
-# See learnings from previous iterations
+# See remaining stories
+cat prd.json | jq '[.userStories[] | select(.passes == false)] | length'
+
+# See quality gates
+cat prd.json | jq '.qualityGates'
+
+# See learnings
 cat progress.txt
 
-# Check git history
+# See recent commits
 git log --oneline -10
+
+# Follow Ralph in real-time
+tail -f ralph.log
 ```
-
-## Customizing the Prompt
-
-After copying `prompt.md` (for Amp) or `CLAUDE.md` (for Claude Code) to your project, customize it for your project:
-- Add project-specific quality check commands
-- Include codebase conventions
-- Add common gotchas for your stack
 
 ## Archiving
 
-Ralph automatically archives previous runs when you start a new feature (different `branchName`). Archives are saved to `archive/YYYY-MM-DD-feature-name/`.
+Ralph automatically archives previous runs when the branch name changes. Archives are saved to `archive/YYYY-MM-DD-feature-name/`.
 
 ## References
 
-- [Geoffrey Huntley's Ralph article](https://ghuntley.com/ralph/)
-- [Amp documentation](https://ampcode.com/manual)
-- [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code)
+- [BMAD Method (Quant)](https://github.com/tomlupo/bmad-method-quant) - Structured AI-driven development
+- [Claude Build Workflow](https://github.com/rohunj/claude-build-workflow) - Original enhanced Ralph workflow
+- [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph/) - The original Ralph pattern
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - Anthropic's CLI
+- [Amp](https://ampcode.com) - Alternative AI coding tool

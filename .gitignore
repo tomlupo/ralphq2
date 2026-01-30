@@ -2,6 +2,10 @@
 prd.json
 progress.txt
 .last-branch
+ralph.log
+
+# Notification config (contains topic IDs)
+.notify-config
 
 # Archive is optional to commit
 # archive/
@@ -9,5 +13,8 @@ progress.txt
 # OS files
 .DS_Store
 
-#Claude
+# Claude
 .claude/
+
+# Node (for flowchart)
+node_modules/

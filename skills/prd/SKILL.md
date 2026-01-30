@@ -1,35 +1,43 @@
 ---
 name: prd
-description: "Generate a Product Requirements Document (PRD) for a new feature. Use when planning a feature, starting a new project, or when asked to create a PRD. Triggers on: create a prd, write prd for, plan this feature, requirements for, spec out."
+description: "Generate a Product Requirements Document (PRD) using BMAD method structured analysis. Use when planning a feature, starting a new project, or when asked to create a PRD. Triggers on: create a prd, write prd for, plan this feature, requirements for, spec out."
 ---
 
-# PRD Generator
+# PRD Generator (BMAD Method)
 
-Create detailed Product Requirements Documents that are clear, actionable, and suitable for implementation.
+Create detailed Product Requirements Documents through structured discovery and analysis, following the BMAD (Breakthrough Method of Agile AI-Driven Development) approach.
 
 ---
 
 ## The Job
 
 1. Receive a feature description from the user
-2. Ask 3-5 essential clarifying questions (with lettered options)
-3. Generate a structured PRD based on answers
-4. Save to `tasks/prd-[feature-name].md`
+2. Conduct a structured discovery interview (BMAD Phase 1)
+3. Ask 3-5 essential clarifying questions (with lettered options)
+4. Generate a structured PRD (BMAD Phase 2)
+5. Save to `tasks/prd-[feature-name].md`
 
-**Important:** Do NOT start implementing. Just create the PRD.
+**Important:** Do NOT start implementing. Create only the PRD. A QRD (Quality Requirements Document) should be created separately using the `qrd` skill.
 
 ---
 
-## Step 1: Clarifying Questions
+## Step 1: Discovery Interview (BMAD Phase 1)
 
-Ask only critical questions where the initial prompt is ambiguous. Focus on:
+Before writing requirements, conduct a brief structured discovery. Ask the user about:
 
-- **Problem/Goal:** What problem does this solve?
-- **Core Functionality:** What are the key actions?
-- **Scope/Boundaries:** What should it NOT do?
-- **Success Criteria:** How do we know it's done?
+- **Problem Statement:** What specific problem does this solve? Who has this problem today?
+- **Target Users:** Who will use this? What is their technical level?
+- **Core Value Proposition:** What is the single most important thing this feature does?
+- **Success Criteria:** How will we know this feature is successful?
+- **Scope Boundaries:** What should this explicitly NOT do?
 
-### Format Questions Like This:
+Keep the interview focused. 3-5 questions maximum.
+
+---
+
+## Step 2: Clarifying Questions
+
+Ask only critical questions where the initial prompt is ambiguous. Format with lettered options for quick responses:
 
 ```
 1. What is the primary goal of this feature?
@@ -55,15 +63,15 @@ This lets users respond with "1A, 2C, 3B" for quick iteration.
 
 ---
 
-## Step 2: PRD Structure
+## Step 3: PRD Structure
 
 Generate the PRD with these sections:
 
 ### 1. Introduction/Overview
-Brief description of the feature and the problem it solves.
+Brief description of the feature and the problem it solves. Include context from the discovery interview.
 
 ### 2. Goals
-Specific, measurable objectives (bullet list).
+Specific, measurable objectives (bullet list). Each goal should be verifiable.
 
 ### 3. User Stories
 Each story needs:
@@ -85,9 +93,22 @@ Each story should be small enough to implement in one focused session.
 - [ ] **[UI stories only]** Verify in browser using dev-browser skill
 ```
 
-**Important:** 
-- Acceptance criteria must be verifiable, not vague. "Works correctly" is bad. "Button shows confirmation dialog before deleting" is good.
-- **For any story with UI changes:** Always include "Verify in browser using dev-browser skill" as acceptance criteria. This ensures visual verification of frontend work.
+**Story sizing rules:**
+- If you cannot describe the change in 2-3 sentences, it is too big
+- Each story should touch at most 3 files
+- Schema, backend, and UI changes should be separate stories
+
+**Dependency ordering:**
+1. Schema/database changes (migrations)
+2. Server actions / backend logic
+3. UI components that use the backend
+4. Dashboard/summary views that aggregate data
+
+**Acceptance criteria rules:**
+- Must be verifiable, not vague. "Works correctly" is bad. "Button shows confirmation dialog before deleting" is good
+- Always include "Typecheck passes" for every story
+- For UI stories: Always include "Verify in browser using dev-browser skill"
+- For data/logic stories: Include "Unit tests cover happy path and error cases"
 
 ### 4. Functional Requirements
 Numbered list of specific functionalities:
@@ -110,24 +131,23 @@ What this feature will NOT include. Critical for managing scope.
 - Performance requirements
 
 ### 8. Success Metrics
-How will success be measured?
-- "Reduce time to complete X by 50%"
-- "Increase conversion rate by 10%"
+How will success be measured? Each metric should be quantifiable.
 
 ### 9. Open Questions
 Remaining questions or areas needing clarification.
 
 ---
 
-## Writing for Junior Developers
+## Writing for Autonomous Agents
 
-The PRD reader may be a junior developer or AI agent. Therefore:
+The PRD reader may be an AI agent (like Ralph) or a junior developer. Therefore:
 
 - Be explicit and unambiguous
 - Avoid jargon or explain it
 - Provide enough detail to understand purpose and core logic
 - Number requirements for easy reference
 - Use concrete examples where helpful
+- Specify exact field names, types, and values where possible
 
 ---
 
@@ -228,13 +248,29 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ---
 
+## Next Steps After PRD
+
+After creating the PRD, the recommended workflow is:
+
+1. **Create QRD:** Use the `qrd` skill to define quality requirements
+2. **Analyze Edge Cases:** Use the `edge-cases` skill to find risks
+3. **Validate Stories:** Use the `story-quality` skill to check story quality
+4. **Convert to JSON:** Use the `ralph` skill to create `prd.json`
+
+---
+
 ## Checklist
 
 Before saving the PRD:
 
+- [ ] Conducted discovery interview
 - [ ] Asked clarifying questions with lettered options
 - [ ] Incorporated user's answers
-- [ ] User stories are small and specific
+- [ ] User stories are small and specific (one context window each)
+- [ ] Stories are ordered by dependency (schema → backend → UI)
+- [ ] Acceptance criteria are verifiable (not vague)
+- [ ] All stories include "Typecheck passes"
+- [ ] UI stories include "Verify in browser using dev-browser skill"
 - [ ] Functional requirements are numbered and unambiguous
 - [ ] Non-goals section defines clear boundaries
 - [ ] Saved to `tasks/prd-[feature-name].md`

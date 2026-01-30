@@ -2,6 +2,12 @@
   "project": "MyApp",
   "branchName": "ralph/task-priority",
   "description": "Task Priority System - Add priority levels to tasks",
+  "qrdPath": "tasks/qrd-task-priority.md",
+  "qualityGates": {
+    "staticAnalysis": ["Typecheck passes", "Linter passes with zero warnings"],
+    "testing": ["All existing tests pass (no regressions)", "Unit tests for priority validation logic"],
+    "integration": ["Build completes successfully", "Database migration runs cleanly"]
+  },
   "userStories": [
     {
       "id": "US-001",
@@ -10,11 +16,13 @@
       "acceptanceCriteria": [
         "Add priority column to tasks table: 'high' | 'medium' | 'low' (default 'medium')",
         "Generate and run migration successfully",
-        "Typecheck passes"
+        "Existing tasks get default priority 'medium'",
+        "Typecheck passes",
+        "All existing tests pass (no regressions)"
       ],
       "priority": 1,
       "passes": false,
-      "notes": ""
+      "notes": "Addresses edge cases EC-001, EC-004"
     },
     {
       "id": "US-002",
@@ -24,6 +32,7 @@
         "Each task card shows colored priority badge (red=high, yellow=medium, gray=low)",
         "Priority visible without hovering or clicking",
         "Typecheck passes",
+        "All existing tests pass (no regressions)",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
@@ -38,12 +47,14 @@
         "Priority dropdown in task edit modal",
         "Shows current priority as selected",
         "Saves immediately on selection change",
+        "Invalid priority values rejected with error message",
         "Typecheck passes",
+        "All existing tests pass (no regressions)",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
       "passes": false,
-      "notes": ""
+      "notes": "Addresses edge case EC-002"
     },
     {
       "id": "US-004",
@@ -52,13 +63,14 @@
       "acceptanceCriteria": [
         "Filter dropdown with options: All | High | Medium | Low",
         "Filter persists in URL params",
-        "Empty state message when no tasks match filter",
+        "Show 'No tasks match this filter' empty state when no results",
         "Typecheck passes",
+        "All existing tests pass (no regressions)",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
       "passes": false,
-      "notes": ""
+      "notes": "Addresses edge case EC-003"
     }
   ]
 }
