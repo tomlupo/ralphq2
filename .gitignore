@@ -6,6 +6,9 @@ progress.txt
 # Archive is optional to commit
 # archive/
 
+# Logs (generated during runs)
+logs/
+
 # OS files
 .DS_Store
 

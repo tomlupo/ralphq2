@@ -120,6 +120,8 @@ Ralph will:
 | `skills/prd/` | Skill for generating PRDs |
 | `skills/ralph/` | Skill for converting PRDs to JSON |
 | `flowchart/` | Interactive visualization of how Ralph works |
+| `scripts/compound/` | Compound nightly loop scripts (Claude Code) |
+| `launchd/` | macOS scheduling templates for nightly automation |
 
 ## Flowchart
 
@@ -183,6 +185,97 @@ Frontend stories must include "Verify in browser using dev-browser skill" in acc
 
 When all stories have `passes: true`, Ralph outputs `<promise>COMPLETE</promise>` and the loop exits.
 
+## Compound Nightly Loop (Claude Code)
+
+Run Ralph automatically every night with compounding learnings. The system runs two jobs in sequence:
+
+- **10:30 PM** - Compound Review: Reviews recent work, extracts learnings, updates CLAUDE.md files
+- **11:00 PM** - Auto-Compound: Pulls latest (with fresh learnings), picks #1 priority from reports, implements it, creates a PR
+
+The order matters. The review job updates your CLAUDE.md files with patterns and gotchas. The implementation job then benefits from those learnings.
+
+### Quick Setup
+
+```bash
+./scripts/compound/setup.sh
+```
+
+This installs launchd agents (macOS) or prints cron instructions (Linux).
+
+### Manual Setup
+
+1. **Create a reports directory** with prioritized items:
+
+```bash
+mkdir -p reports
+```
+
+Add markdown files with prioritized features/bugs, e.g. `reports/2026-01-30-priorities.md`.
+
+2. **Make scripts executable:**
+
+```bash
+chmod +x scripts/daily-compound-review.sh
+chmod +x scripts/compound/auto-compound.sh
+chmod +x scripts/compound/analyze-report.sh
+chmod +x scripts/compound/loop.sh
+```
+
+3. **Test manually:**
+
+```bash
+# Run the compound review
+./scripts/daily-compound-review.sh
+
+# Run the full auto-compound pipeline
+./scripts/compound/auto-compound.sh
+```
+
+4. **Schedule with launchd (macOS):**
+
+```bash
+./scripts/compound/setup.sh
+```
+
+Or with cron (Linux):
+
+```bash
+# Compound Review at 10:30 PM
+30 22 * * * /path/to/project/scripts/daily-compound-review.sh /path/to/project
+
+# Auto-Compound at 11:00 PM
+0 23 * * * /path/to/project/scripts/compound/auto-compound.sh /path/to/project
+```
+
+### How It Works
+
+Every night:
+
+1. **10:30 PM** - Agent reviews recent git commits, finds missed learnings, updates CLAUDE.md files, pushes to main
+2. **11:00 PM** - Agent pulls main (now with fresh context), picks the top priority from your reports, creates a PRD, breaks it into tasks, implements them, opens a draft PR
+
+When you wake up, you have:
+- Updated CLAUDE.md files with patterns your agent learned
+- A draft PR implementing your next priority
+- Logs showing exactly what happened
+
+### Compound Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/daily-compound-review.sh` | Reviews recent work, extracts learnings into CLAUDE.md |
+| `scripts/compound/auto-compound.sh` | Full pipeline: report -> PRD -> tasks -> implementation -> PR |
+| `scripts/compound/analyze-report.sh` | Analyzes a report and picks the #1 priority item |
+| `scripts/compound/loop.sh` | Execution loop (runs Claude Code iteratively on tasks) |
+| `scripts/compound/setup.sh` | Installer for launchd agents (macOS) |
+| `launchd/` | Plist templates for macOS scheduling |
+
+### Uninstall
+
+```bash
+./scripts/compound/setup.sh --uninstall
+```
+
 ## Debugging
 
 Check current state:
@@ -196,6 +289,18 @@ cat progress.txt
 
 # Check git history
 git log --oneline -10
+
+# Check compound nightly loop logs
+tail -f logs/compound-review.log
+tail -f logs/auto-compound.log
+tail -f logs/compound-loop.log
+
+# Verify launchd agents are loaded (macOS)
+launchctl list | grep ralph
+
+# Test compound scripts manually
+launchctl start com.ralph.daily-compound-review
+launchctl start com.ralph.auto-compound
 ```
 
 ## Customizing the Prompt
